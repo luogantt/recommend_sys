@@ -13,7 +13,8 @@ from numpy import *
 from random import normalvariate  # 正态分布
 from datetime import datetime
 import pandas as pd
-
+import numpy as np
+import math
 trainData = 'data/diabetes_train.txt'   #请换为自己文件的路径
 testData = 'data/diabetes_test.txt'
 
@@ -56,8 +57,8 @@ def SGD_FM(dataMatrix, classLabels, k, iter):
             interaction = sum(multiply(inter_1, inter_1) - inter_2) / 2.       #二阶交叉项计算完成
 
             p = w_0 + dataMatrix[x] * w + interaction  # 计算预测的输出，即FM的全部项之和
-            loss = 1-sigmoid(classLabels[x] * p[0, 0])    #计算损失
-
+#            loss = 1-sigmoid(classLabels[x] * p[0, 0])    #计算损失
+            loss =-math.log10(sigmoid(classLabels[x] * p[0, 0])  )  #计算损失
             w_0 = w_0 +alpha * loss * classLabels[x]
 
             for i in range(n):
