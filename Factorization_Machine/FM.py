@@ -14,7 +14,6 @@ from random import normalvariate  # 正态分布
 from datetime import datetime
 import pandas as pd
 import numpy as np
-import math
 trainData = 'data/diabetes_train.txt'   #请换为自己文件的路径
 testData = 'data/diabetes_test.txt'
 
@@ -51,14 +50,20 @@ def SGD_FM(dataMatrix, classLabels, k, iter):
 
     for it in range(iter):
         for x in range(m):  # 随机优化，每次只使用一个样本
+            
+            xx=dataMatrix[x]
+            xx=np.array(xx)
+            xx1=xx.T@xx
+            vv=v@v.T
+            e=xx1*vv
             # 二阶项的计算
             inter_1 = dataMatrix[x] * v
-            inter_2 = multiply(dataMatrix[x], dataMatrix[x]) * multiply(v, v)  #二阶交叉项的计算
-            interaction = sum(multiply(inter_1, inter_1) - inter_2) / 2.       #二阶交叉项计算完成
-
+#            inter_2 = multiply(dataMatrix[x], dataMatrix[x]) * multiply(v, v)  #二阶交叉项的计算
+#            interaction = sum(multiply(inter_1, inter_1) - inter_2) / 2.       #二阶交叉项计算完成
+            interaction=0.5*(e.sum()-e.trace())
             p = w_0 + dataMatrix[x] * w + interaction  # 计算预测的输出，即FM的全部项之和
-#            loss = 1-sigmoid(classLabels[x] * p[0, 0])    #计算损失
-            loss =-math.log10(sigmoid(classLabels[x] * p[0, 0])  )  #计算损失
+            loss = 1-sigmoid(classLabels[x] * p[0, 0])    #计算损失
+            
             w_0 = w_0 +alpha * loss * classLabels[x]
 
             for i in range(n):
@@ -104,7 +109,7 @@ if __name__ == '__main__':
     dataTest, labelTest = preprocessData(test)
     date_startTrain = datetime.now()
     print    ("开始训练")
-    w_0, w, v = SGD_FM(mat(dataTrain), labelTrain, 20, 200)
+    w_0, w, v = SGD_FM(mat(dataTrain), labelTrain, 20, 2)
     print(
         "训练准确性为：%f" % (1 - getAccuracy(mat(dataTrain), labelTrain, w_0, w, v)))
     date_endTrain = datetime.now()
