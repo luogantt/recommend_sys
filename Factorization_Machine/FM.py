@@ -52,27 +52,22 @@ def SGD_FM(dataMatrix, classLabels, k, iter):
     for it in range(iter):
         for x in range(m):  # 随机优化，每次只使用一个样本
             
-            xx=dataMatrix[x]
-            xx=np.array(xx)
+            xx0=dataMatrix[x]
+            xx=np.array(xx0)
             xx1=xx.T@xx
             vv=v@v.T
             e=xx1*vv
-            # 二阶项的计算
-            inter_1 = dataMatrix[x] * v
-#            inter_2 = multiply(dataMatrix[x], dataMatrix[x]) * multiply(v, v)  #二阶交叉项的计算
-#            interaction = sum(multiply(inter_1, inter_1) - inter_2) / 2.       #二阶交叉项计算完成
             interaction=0.5*(e.sum()-e.trace())
-            p = w_0 + dataMatrix[x] * w + interaction  # 计算预测的输出，即FM的全部项之和
-#            loss = 1-sigmoid(classLabels[x] * p[0, 0])    #计算损失
-            loss=-log10(sigmoid(classLabels[x] * p[0, 0]) )
+            p = w_0 + xx@w + interaction
+            loss = (1-sigmoid(classLabels[x] * p[0, 0]) )   #计算损失
             w_0 = w_0 +alpha * loss * classLabels[x]
 
             for i in range(n):
                 if dataMatrix[x, i] != 0:
-                    w[i, 0] = w[i, 0] +alpha * loss * classLabels[x] * dataMatrix[x, i]
+                    w[i, 0] = w[i, 0] +alpha * loss * classLabels[x] * xx[0,i]#dataMatrix[x, i]
                     for j in range(k):
-                        v[i, j] = v[i, j]+ alpha * loss * classLabels[x] * (
-                        dataMatrix[x, i] * inter_1[0, j] - v[i, j] * dataMatrix[x, i] * dataMatrix[x, i])
+                        vv=np.array([v[:,j]])
+                        v[i, j] = v[i, j]+ alpha * loss * classLabels[x] * xx[0,i]*( xx@vv.T - v[i, j] * xx[0,i])
         print("第{}次迭代后的损失为{}".format(it, loss))
 
     return w_0, w, v
@@ -85,10 +80,13 @@ def getAccuracy(dataMatrix, classLabels, w_0, w, v):
     result = []
     for x in range(m):   #计算每一个样本的误差
         allItem += 1
-        inter_1 = dataMatrix[x] * v
-        inter_2 = multiply(dataMatrix[x], dataMatrix[x]) * multiply(v, v)
-        interaction = sum(multiply(inter_1, inter_1) - inter_2) / 2.
-        p = w_0 + dataMatrix[x] * w + interaction  # 计算预测的输出
+        xx0=dataMatrix[x]
+        xx=np.array(xx0)
+        xx1=xx.T@xx
+        vv=v@v.T
+        e=xx1*vv
+        interaction=0.5*(e.sum()-e.trace())
+        p = w_0 + xx@w + interaction
 
         pre = sigmoid(p[0, 0])
         result.append(pre)
@@ -110,7 +108,7 @@ if __name__ == '__main__':
     dataTest, labelTest = preprocessData(test)
     date_startTrain = datetime.now()
     print    ("开始训练")
-    w_0, w, v = SGD_FM(mat(dataTrain), labelTrain, 20, 3)
+    w_0, w, v = SGD_FM(mat(dataTrain), labelTrain, 20, 30)
     print(
         "训练准确性为：%f" % (1 - getAccuracy(mat(dataTrain), labelTrain, w_0, w, v)))
     date_endTrain = datetime.now()
