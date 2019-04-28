@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2018/8/15 10:27
-# @Author  : Lemon_shark
-# @Email   : jiping_cehn@163.com
-# @File    : FM.py
-# @Software: PyCharm Community Edition
+
 
 # coding:UTF-8
 
