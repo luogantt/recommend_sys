@@ -83,7 +83,8 @@ def user_based_recommend(data, w, user):
             #print('ww[:,user]=',ww[:,user])
             
             #print('dd[:,i].T',dd[:,i].T)
-            predict[i]=ww[:,user]@dd[:,i].T
+#            predict[i]=ww[:,user]@dd[:,i].T
+            predict[i]=ww[user]@dd[:,i].T
             
             #print(predict)
     return predict
