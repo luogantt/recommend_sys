@@ -107,15 +107,7 @@ def top_k(predict, k):
         return pp1.iloc[:k]
     else:
         return pp1
-#    
-#def svd(data):
-#    u,sigma,vt=linalg.svd(data)
-#    
-#    sig3=mat(eye(3)*sigma[:3])
-#    
-#    fea_mat=data.T*u[:,:3]*sig3.I
-#    
-#    return fea_mat
+
 
 def normalize(w):
     
@@ -156,7 +148,7 @@ print('only use collaborative')
 w_initial=similarity(data)
 # 3、利用用户之间的相似性进行推荐
 #print ("------------ 3. predict ------------" )   
-predict = user_based_recommend(data, w_initial, 0)
+predict = user_based_recommend(data, w_initial, 1)
 # 4、进行Top-K推荐
 #print ("------------ 4. top_k recommendation ------------")
 top_recom = top_k(predict, 1)
@@ -171,7 +163,7 @@ w_initial=similarity(data)
 
 w_initial_normal=normalize(w_initial)
 
-predict = user_based_recommend(data,  w_initial_normal, 0)
+predict = user_based_recommend(data,  w_initial_normal, 1)
 top_recom = top_k(predict, 1)
 print ('top_recom=',top_recom)
 
