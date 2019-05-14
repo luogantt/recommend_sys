@@ -160,7 +160,6 @@ Xi_test, Xv_test, ids = parse(feat_dict=config.feature_dict, df=dfTest, has_labe
 config.field_size = len(Xi_train[0])
 
 
-
 ##################################
 # 4. 建立模型
 ##################################
@@ -247,6 +246,7 @@ for i in range(0, len(deep_layers)):
     y_deep = config.deep_layers_activation(y_deep)
 
 # ----------- output -----------
+    
 concat_input = tf.concat([y_first_order, y_second_order, y_deep], axis=1)
 out = tf.add(tf.matmul(concat_input, weights['concat_projection']), weights['concat_bias'])
 out = tf.nn.sigmoid(out)
