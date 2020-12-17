@@ -1,0 +1,12 @@
+Liu Yi,3,1001
+Chen Er,4,1001
+Zhang San,3,1001
+Li Si,3,1001
+Liu Yi,3,1002
+Li Si,4,1002
+Liu Yi,4,1003
+Zhang San,5,1003
+Li Si,5,1003
+Liu Yi,4,1004
+Zhang San,3,1004
+Liu Yi,5,1005
