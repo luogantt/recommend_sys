@@ -233,6 +233,10 @@ class CIN(Layer):
         self.field_nums = [int(input_shape[1])]
         self.filters = []
         self.bias = []
+        
+        print('self.layer_size=',self.layer_size)
+        print('self.field_nums=',self.field_nums)
+        
         for i, size in enumerate(self.layer_size):
 
             self.filters.append(self.add_weight(name='filter' + str(i),
@@ -253,10 +257,11 @@ class CIN(Layer):
                 self.field_nums.append(size // 2)
             else:
                 self.field_nums.append(size)
-
+        print('self.filters=',self.filters)
+        print('self.bias=',self.bias)
         self.activation_layers = [activation_layer(
             self.activation) for _ in self.layer_size]
-
+        print('self.field_nums_down=',self.field_nums)
         super(CIN, self).build(input_shape)  # Be sure to call this somewhere!
 
     def call(self, inputs, **kwargs):
@@ -269,13 +274,26 @@ class CIN(Layer):
         hidden_nn_layers = [inputs]
         final_result = []
 
+        #field_nums=[26, 64, 64]
         split_tensor0 = tf.split(hidden_nn_layers[0], dim * [1], 2)
         for idx, layer_size in enumerate(self.layer_size):
             split_tensor = tf.split(hidden_nn_layers[-1], dim * [1], 2)
 
+            #三个张量分别相乘
+            '''
+            tf.matmul(split_tensor0[0], split_tensor[0], transpose_b=True)
+            
+            <tf.Tensor 'BatchMatMulV2_9:0' shape=(None, 26, 26) dtype=float32>
+            '''
+            
+            #dot_result_m.shape=TensorShape([3, None, 26, 26])
             dot_result_m = tf.matmul(
                 split_tensor0, split_tensor, transpose_b=True)
 
+            
+            '''
+            dot_result_o.shape=TensorShape([3, None, 676])
+            '''
             dot_result_o = tf.reshape(
                 dot_result_m, shape=[dim, -1, self.field_nums[0] * self.field_nums[idx]])
 
@@ -305,7 +323,9 @@ class CIN(Layer):
             hidden_nn_layers.append(next_hidden)
 
         result = tf.concat(final_result, axis=1)
+        print('result=',result)
         result = reduce_sum(result, -1, keep_dims=False)
+        print('result=',result)
 
         return result
 

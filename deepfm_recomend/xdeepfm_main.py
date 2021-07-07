@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 # from feature_column import build_input_features, get_linear_logit, DEFAULT_GROUP_NAME, input_from_feature_columns
 from layers.core import PredictionLayer, DNN
-from layers.interaction import FM
+from layers.interaction import FM,CIN
 from layers.utils import concat_func, add_func, combined_dnn_input
 # from  deepfm import DeepFM
 
@@ -86,79 +86,66 @@ linear_feature_columns = merge_list
 
 from feature import DEFAULT_GROUP_NAME,build_input_features
 
+def xDeepFM(linear_feature_columns, dnn_feature_columns, dnn_hidden_units=(256, 256),
+            cin_layer_size=(128, 128,), cin_split_half=True, cin_activation='relu', l2_reg_linear=0.00001,
+            l2_reg_embedding=0.00001, l2_reg_dnn=0, l2_reg_cin=0, seed=1024, dnn_dropout=0,
+            dnn_activation='relu', dnn_use_bn=False, task='binary'):
 
-
-def DeepFM(linear_feature_columns, dnn_feature_columns, fm_group=[DEFAULT_GROUP_NAME], dnn_hidden_units=(128, 128),
-           l2_reg_linear=0.00001, l2_reg_embedding=0.00001, l2_reg_dnn=0, seed=1024, dnn_dropout=0,
-           dnn_activation='relu', dnn_use_bn=False, task='binary'):
-        
-    #构建模型的输入张量
-    fm_group=[DEFAULT_GROUP_NAME]
-    dnn_hidden_units=(128, 128)
-    l2_reg_linear=0.00001
-    l2_reg_embedding=0.00001
-    l2_reg_dnn=0
-    seed=1024
-    dnn_dropout=0
-    dnn_activation='relu'
-    dnn_use_bn=False
-    task='binary'
     
+    
+    # dnn_hidden_units=(256, 256)
+    # cin_layer_size=(128, 128,)
+    # cin_split_half=True
+    # cin_activation='relu'
+    # l2_reg_linear=0.00001
+    # l2_reg_embedding=0.00001
+    # l2_reg_dnn=0
+    # l2_reg_cin=0
+    # seed=1024
+    # dnn_dropout=0
+    # dnn_activation='relu'
+    # dnn_use_bn=False
+    # task='binary'
+
     features = build_input_features(
-        merge_list)
-    
-    print("#"*10)
-    print(features)
+        linear_feature_columns + dnn_feature_columns)
+
     inputs_list = list(features.values())
-    
     from feature import get_linear_logit
     linear_logit = get_linear_logit(features, linear_feature_columns, seed=seed, prefix='linear',
                                     l2_reg=l2_reg_linear)
-    
-    
     from feature import input_from_feature_columns
-    group_embedding_dict, dense_value_list = input_from_feature_columns(features, dnn_feature_columns, l2_reg_embedding,
-                                                                        seed, support_group=True)
+    sparse_embedding_list, dense_value_list = input_from_feature_columns(features, dnn_feature_columns,
+                                                                         l2_reg_embedding, seed)
 
-    #########################################################################################################
+    fm_input = concat_func(sparse_embedding_list, axis=1)
+
+    dnn_input = combined_dnn_input(sparse_embedding_list, dense_value_list)
+    dnn_output = DNN(dnn_hidden_units, dnn_activation, l2_reg_dnn, dnn_dropout, dnn_use_bn, seed=seed)(dnn_input)
     
-    print('group_embedding_dict',group_embedding_dict)
-    print('dense_value_list',dense_value_list)
-    
-    # cc=[]
-    # for k in group_embedding_dict:
-    #     cc.append(k)
-    cc1=concat_func(group_embedding_dict, axis=1)
-    
-    cc2=FM()(cc1)
-    
-    # cc=[FM()(concat_func(v, axis=1))
-    #                       for k, v in group_embedding_dict.items() if k in fm_group]
-    fm_logit = add_func([cc2])
-    
-    dnn_input = combined_dnn_input(group_embedding_dict, dense_value_list)
-    
-    dnn_hidden_units=(128, 32)
-    dnn_output = DNN(dnn_hidden_units, dnn_activation, l2_reg_dnn, dnn_dropout,
-                      dnn_use_bn, seed)(dnn_input)
-    
-    # dnn_input= Dense(64, activation='relu')(dnn_input)
-    
-    # dnn_output= Dense(28, activation='relu')(dnn_input)
-    
+        
     import keras 
     import tensorflow as tf
     dnn_logit = tf.keras.layers.Dense(
-        1, use_bias=False, kernel_initializer=tf.keras.initializers.glorot_normal(seed=seed))(dnn_output)
-    
-    final_logit = add_func([linear_logit, fm_logit, dnn_logit])
-    
-    output = PredictionLayer(task)(final_logit)
-    model = tf.keras.models.Model(inputs=inputs_list, outputs=output)
-    
-    return model 
+        1, use_bias=False, kernel_initializer=tf.keras.initializers.glorot_normal(seed))(dnn_output)
 
-model = DeepFM(linear_feature_columns, dnn_feature_columns, task='binary')
+    final_logit = add_func([linear_logit, dnn_logit])
+
+    if len(cin_layer_size) > 0:
+        exFM_out = CIN(cin_layer_size, cin_activation,
+                       cin_split_half, l2_reg_cin, seed)(fm_input)
+        exFM_logit = tf.keras.layers.Dense(1, kernel_initializer=tf.keras.initializers.glorot_normal(seed))(exFM_out)
+        final_logit = add_func([final_logit, exFM_logit])
+
+    output = PredictionLayer(task)(final_logit)
+
+    model = tf.keras.models.Model(inputs=inputs_list, outputs=output)
+    return model
+
+
+ 
+
+model = xDeepFM(linear_feature_columns, dnn_feature_columns, task='binary')
 
 feature_names = get_feature_names(linear_feature_columns + dnn_feature_columns)
 
